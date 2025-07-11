@@ -1,0 +1,132 @@
+import requests
+from datetime import datetime, timedelta
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+
+# === CONFIGURATION ===
+GITHUB_TOKEN = "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"
+DAYS_BACK = 7
+REPOSITORIES = [
+    "OptivaInc/OBP-Product-App-CM-Portal-Backend",
+    "OptivaInc/OBP-Product-App-Suite",
+    "OptivaInc/Optiva-Product-App-Api-Gw",
+    "OptivaInc/OBP-Product-App-CM-Portal-UI",
+    "OptivaInc/OBP-Product-CM-Portal-RAF",
+    "OptivaInc/OBP-Product-App-CM-Portal-Uploader"
+]
+SMTP_SERVER = "172.16.20.11"
+SMTP_PORT = 25
+EMAIL_FROM = "ibrahim.vanak@optiva.com"
+EMAIL_TO = "ibrahim.vanak@optiva.com"
+
+HEADERS = {
+    "Accept": "application/vnd.github+json",
+    "Authorization": f"Bearer {GITHUB_TOKEN}" if GITHUB_TOKEN else ""
+}
+
+# === Fetch PRs ===
+def fetch_merged_prs(repo, branch='main', days_back=DAYS_BACK):
+    since_time = datetime.utcnow() - timedelta(days=int(days_back))
+    url = f"https://api.github.com/repos/{repo}/pulls"
+    params = {"state": "closed", "base": branch, "per_page": 100}
+    results = []
+    page = 1
+
+    while True:
+        response = requests.get(url, headers=HEADERS, params={**params, "page": page})
+        if response.status_code != 200:
+            return f"Error: {response.status_code} - {response.text}", []
+        prs = response.json()
+        if not prs:
+            break
+        for pr in prs:
+            if pr.get("merged_at"):
+                merged_at = datetime.strptime(pr["merged_at"], "%Y-%m-%dT%H:%M:%SZ")
+                if merged_at >= since_time:
+                    results.append({
+                        "repo": repo,
+                        "url": pr["html_url"],
+                        "author": pr["user"]["login"],
+                        "title": pr["title"],
+                        "merged_at": merged_at.strftime("%Y-%m-%d %H:%M UTC")
+                    })
+        page += 1
+    return None, results
+
+# === HTML Builder ===
+def build_html_table_grouped(all_results_by_repo):
+    html = "<p>Hello Team,</p>\n"
+    start_date = (datetime.utcnow() - timedelta(days=DAYS_BACK)).strftime("%Y-%m-%d")
+    end_date = datetime.utcnow().strftime("%Y-%m-%d")
+    html += f"<p>Please find below the list of GitHub PRs merged to the <span style='color: red;'>main</span> branch in the last <span style='color: red; font-weight: bold;'>{DAYS_BACK}</span> day(s) <b>({start_date} → {end_date})</b>:</p>\n"
+
+    for repo in REPOSITORIES:
+        html += f"<h3 style='color: red;'>Repository: {repo}</h3>"
+        prs = all_results_by_repo.get(repo, [])
+
+        if not prs:
+            html += "<p><i>No PRs merged during this period.</i></p><br/>"
+            continue
+
+        html += """
+        <table border="1" cellpadding="6" cellspacing="0" style="border-collapse: collapse; width: 100%;">
+            <tr style="background-color: #f2f2f2;">
+                <th>Date</th>
+                <th>PR Title</th>
+                <th>Author</th>
+                <th>PR Link</th>
+            </tr>
+        """
+        for i, pr in enumerate(prs):
+            bg_color = "#ffffff" if i % 2 == 0 else "#f9f9f9"
+            html += f"""
+            <tr style="background-color: {bg_color};">
+                <td>{pr['merged_at']}</td>
+                <td>{pr['title']}</td>
+                <td>{pr['author']}</td>
+                <td><a href="{pr['url']}">View PR</a></td>
+            </tr>
+            """
+        html += "</table><br/>"
+
+    html += "<p>Regards,<br/>GitHub PR Notifier</p>"
+    return html
+
+# === Email Sender ===
+def send_email_report(subject, html_content, from_email, to_email, smtp_server=SMTP_SERVER, smtp_port=SMTP_PORT):
+    msg = MIMEMultipart('alternative')
+    msg['Subject'] = subject
+    msg['From'] = from_email
+    msg['To'] = to_email
+
+    html_part = MIMEText(html_content, 'html')
+    msg.attach(html_part)
+
+    try:
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.sendmail(from_email, to_email, msg.as_string())
+        print("✅ Email sent successfully.")
+    except Exception as e:
+        print(f"❌ Failed to send email: {e}")
+
+# === Main ===
+if __name__ == "__main__":
+    all_results_by_repo = {}
+
+    for repo in REPOSITORIES:
+        error, prs = fetch_merged_prs(repo, days_back=DAYS_BACK)
+        if error:
+            print(f"[{repo}] Error: {error}")
+            all_results_by_repo[repo] = []
+        else:
+            all_results_by_repo[repo] = prs
+
+    html_content = build_html_table_grouped(all_results_by_repo)
+    send_email_report(
+        subject=f"GitHub PR Merge Report to main branch (Last {DAYS_BACK} Day{'s' if DAYS_BACK > 1 else ''})",
+        html_content=html_content,
+        from_email=EMAIL_FROM,
+        to_email=EMAIL_TO
+    )
+

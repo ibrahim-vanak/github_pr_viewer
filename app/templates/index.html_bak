@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>GitHub PR Viewer</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 2em; }
+    table { border-collapse: collapse; width: 100%; margin-top: 1em; }
+    th, td { border: 1px solid #ddd; padding: 8px; }
+    th { background: #f2f2f2; }
+    .error { color: red; }
+  </style>
+</head>
+<body>
+  <h2>🔍 View Merged PRs</h2>
+  <form method="post" action="{{ url_for('index') }}">
+    <label for="repo">GitHub Repo (e.g. org/repo):</label><br>
+    <input type="text" name="repo" id="repo" required><br><br>
+    <label for="branch">Branch Name (default: main):</label><br>
+    <input type="text" name="branch" id="branch" placeholder="main"><br><br>
+    <label for="days">Last N Days:</label><br>
+    <input type="number" name="days" id="days" required min="1"><br><br>
+    <button type="submit">Get PRs</button><br>
+  </form>
+
+  {% if error %}
+    <p class="error">{{ error }}</p>
+  {% endif %}
+
+  {% if pr_data %}
+    <h3>Results:</h3>
+    <h3>
+        Following are the PRs merged into
+        <strong><span style="color: red;">{{ branch }}</span></strong> branch of
+        <strong><span style="color: red;">{{ repo }}</span></strong> in the last
+        <strong><span style="color: red;">{{ days }}</span></strong> days:
+    </h3>
+    <table>
+      <tr><th>Title</th><th>Author</th><th>Merged At</th><th>Link</th></tr>
+      {% for pr in pr_data %}
+        <tr>
+          <td>{{ pr.title }}</td>
+          <td>{{ pr.author }}</td>
+          <td>{{ pr.merged_at }}</td>
+          <td><a href="{{ pr.url }}" target="_blank">View PR</a></td>
+        </tr>
+      {% endfor %}
+    </table>
+  {% endif %}
+</body>
+</html>
+
