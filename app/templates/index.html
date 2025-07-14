@@ -24,7 +24,7 @@
       font-weight: bold;
     }
 
-    select, input[type="text"], input[type="number"], .ts-wrapper {
+    input[type="text"], input[type="number"], .ts-wrapper {
       width: 100%;
       margin-top: 5px;
       margin-bottom: 15px;
@@ -94,102 +94,108 @@
   </style>
 </head>
 <body>
-<h2>🔍 View Merged GitHub PRs</h2>
+  <h2>🔍 View Merged GitHub PRs</h2>
 
-<form method="post" action="{{ url_for('index') }}">
-  <label for="repo">GitHub Repository:</label>
-  <select name="repo" id="repo" required></select>
+  <form method="post" action="{{ url_for('index') }}">
+    <label for="repo">GitHub Repository:</label>
+    <select name="repo" id="repo" required></select>
 
-  <label for="branch">Branch Name (default: main):</label>
-  <input type="text" name="branch" id="branch" placeholder="main" value="{{ branch or 'main' }}">
+    <label for="branch">Branch Name (default: main):</label>
+    <input type="text" name="branch" id="branch" placeholder="main" value="{{ branch or 'main' }}">
 
-  <label for="days">Number of Days:</label>
-  <input type="number" name="days" id="days" placeholder="7" required min="1" value="{{ days or 7 }}">
+    <label for="days">Number of Days:</label>
+    <input type="number" name="days" id="days" placeholder="7" required min="1" value="{{ days or 7 }}">
 
-  <button type="submit">Get PRs</button>
-  <button type="button" id="clearBtn" style="margin-left: 10px;">Clear</button>
-  <div id="loadingText" class="loading" style="display: none;">Loading repositories...</div>
-</form>
+    <button type="submit">Get PRs</button>
+    <button type="button" id="clearBtn" style="margin-left: 10px;">Clear</button>
+    <div id="loadingText" class="loading" style="display: none;">Loading repositories...</div>
+  </form>
 
-{% if error %}
-<p class="error">{{ error }}</p>
-{% endif %}
+  {% if error %}
+    <p class="error">{{ error }}</p>
+  {% endif %}
 
-{% if pr_data %}
-<h3>
-  Following are the PRs merged into
-  <span class="highlight">{{ branch }}</span> branch of
-  <span class="highlight">{{ selected_repos|join(', ') }}</span> in the last
-  <span class="highlight">{{ days }}</span> day(s):
-</h3>
+  {% if pr_data %}
+    <h3>
+      Following are the PRs merged into
+      <span class="highlight">{{ branch }}</span> branch of
+      <span class="highlight">{{ selected_repos|join(', ') }}</span> in the last
+      <span class="highlight">{{ days }}</span> day(s):
+    </h3>
 
-<table>
-  <tr>
-    <th>Repository</th>
-    <th>Title</th>
-    <th>Author</th>
-    <th>Merged At</th>
-    <th>Link</th>
-  </tr>
-  {% for pr in pr_data %}
-  <tr>
-    <td>{{ pr.repo }}</td>
-    <td class="title-col">{{ pr.title }}</td>
-    <td>{{ pr.author }}</td>
-    <td>{{ pr.merged_at }}</td>
-    <td><a href="{{ pr.url }}" target="_blank">View PR</a></td>
-  </tr>
-  {% endfor %}
-</table>
-{% endif %}
+    <table>
+      <tr>
+        <th>Repository</th>
+        <th>Title</th>
+        <th>Author</th>
+        <th>Merged At</th>
+        <th>Link</th>
+      </tr>
+      {% for pr in pr_data %}
+      <tr>
+        <td>{{ pr.repo }}</td>
+        <td class="title-col">{{ pr.title }}</td>
+        <td>{{ pr.author }}</td>
+        <td>{{ pr.merged_at }}</td>
+        <td><a href="{{ pr.url }}" target="_blank">View PR</a></td>
+      </tr>
+      {% endfor %}
+    </table>
+  {% endif %}
 
-<script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
-<script>
-  const defaultRepos = [
-    "OBP-Product-App-CM-Portal-Backend",
-    "OBP-Product-App-Suite",
-    "Optiva-Product-App-Api-Gw",
-    "OBP-Product-App-CM-Portal-UI",
-    "OBP-Product-CM-Portal-RAF",
-    "OBP-Product-App-CM-Portal-Uploader"
-  ];
+  <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
+  <script>
+    let repoSelect;
 
-  let repoSelect;
+    const defaultRepos = [
+      "OBP-Product-App-CM-Portal-Backend",
+      "OBP-Product-App-Suite",
+      "Optiva-Product-App-Api-Gw",
+      "OBP-Product-App-CM-Portal-UI",
+      "OBP-Product-CM-Portal-RAF",
+      "OBP-Product-App-CM-Portal-Uploader"
+    ];
 
-  window.addEventListener('DOMContentLoaded', () => {
-    const loadingText = document.getElementById('loadingText');
-    loadingText.style.display = 'block';
+    window.addEventListener('DOMContentLoaded', () => {
+      const loadingText = document.getElementById('loadingText');
+      loadingText.style.display = 'block';
 
-    // Initialize dropdown with 6 default options
-    repoSelect = new TomSelect('#repo', {
-      maxItems: 1,
-      create: false,
-      options: defaultRepos.map(r => ({ value: r, text: r })),
-      items: [],  // No pre-selected item
-      plugins: ['remove_button'],
-      placeholder: 'Search and select a repository...',
-      valueField: 'value',
-      labelField: 'text',
-      searchField: 'text'
-    });
-
-    // Asynchronously fetch all repos and add them
-    fetch('/all_repos')
-      .then(res => res.json())
-      .then(data => {
-        loadingText.style.display = 'none';
-        data.forEach(opt => repoSelect.addOption(opt));
-        repoSelect.refreshOptions(false);
+      // Initialize TomSelect with default values first
+      repoSelect = new TomSelect('#repo', {
+        maxItems: 1,
+        create: false,
+        options: defaultRepos.map(repo => ({ value: repo, text: repo })),
+        plugins: ['remove_button'],
+        placeholder: 'Search and select a repository...',
+        valueField: 'value',
+        labelField: 'text',
+        searchField: 'text'
       });
 
-    // Clear logic
-    document.getElementById('clearBtn').addEventListener('click', () => {
-      if (repoSelect) repoSelect.clear();
-      document.getElementById('branch').value = '';
-      document.getElementById('days').value = '';
-      document.querySelectorAll('table, h3, .error').forEach(el => el.remove());
+      // Now fetch actual repo list
+      fetch('/all_repos')
+        .then(res => res.json())
+        .then(repoOptions => {
+          loadingText.style.display = 'none';
+          repoSelect.clearOptions();
+          repoOptions.forEach(repo => repoSelect.addOption(repo));
+          repoSelect.refreshOptions(false);
+        });
+
+      // Clear Button Logic
+      document.getElementById('clearBtn').addEventListener('click', () => {
+        if (repoSelect) repoSelect.clear();
+        document.getElementById('branch').value = '';
+        document.getElementById('days').value = '';
+
+        const resultTable = document.querySelector('table');
+        const summaryHeading = document.querySelector('h3');
+        const errorMessage = document.querySelector('.error');
+        if (resultTable) resultTable.remove();
+        if (summaryHeading) summaryHeading.remove();
+        if (errorMessage) errorMessage.remove();
+      });
     });
-  });
-</script>
+  </script>
 </body>
 </html>
