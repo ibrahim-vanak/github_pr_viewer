@@ -1,12 +1,16 @@
-from flask import Flask, render_template, request, jsonify
+import os
+import threading
 import requests
+from flask import Flask, render_template, request, jsonify
 from datetime import datetime, timedelta, timezone
 
 app = Flask(__name__)
 
-GITHUB_TOKEN = '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'  # Replace securely
+# === Secure token and org config ===
+GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN', 'your-token-here')  # Set this in shell or .env
 ORG_NAME = 'OptivaInc'
 
+# === Default repos to show initially ===
 DEFAULT_REPOS = [
     "OBP-Product-App-CM-Portal-Backend",
     "OBP-Product-App-Suite",
@@ -16,45 +20,54 @@ DEFAULT_REPOS = [
     "OBP-Product-App-CM-Portal-Uploader"
 ]
 
-REPO_CACHE = []
+REPO_CACHE = []  # Global repo cache
 
 
 def get_repositories():
+    """Fetch and cache filtered repositories from GitHub."""
+    global REPO_CACHE
+
     if REPO_CACHE:
-        return REPO_CACHE
+        return REPO_CACHE  # Return from cache
 
-    repos = []
-    headers = {'Authorization': f'token {GITHUB_TOKEN}'}
-    page = 1
+    try:
+        repos = []
+        headers = {'Authorization': f'token {GITHUB_TOKEN}'}
+        page = 1
 
-    while True:
-        url = f'https://api.github.com/orgs/{ORG_NAME}/repos?per_page=100&page={page}'
-        resp = requests.get(url, headers=headers)
-        if resp.status_code != 200:
-            break
-        page_data = resp.json()
-        if not page_data:
-            break
-        repos.extend(page_data)
-        page += 1
+        while True:
+            url = f'https://api.github.com/orgs/{ORG_NAME}/repos?per_page=100&page={page}'
+            resp = requests.get(url, headers=headers)
+            if resp.status_code != 200:
+                break
+            page_data = resp.json()
+            if not page_data:
+                break
+            repos.extend(page_data)
+            page += 1
 
-    filtered = [
-        {"value": repo["name"], "text": repo["name"]}
-        for repo in repos
-        if repo["name"].startswith(("OBP", "Optiva", "orms"))
-    ]
-    REPO_CACHE.extend(filtered)
-    return filtered
+        # Filter repos by prefix
+        REPO_CACHE = [
+            {"value": repo["name"], "text": repo["name"]}
+            for repo in repos
+            if repo["name"].startswith(("OBP", "Optiva", "orms"))
+        ]
+
+    except Exception as e:
+        print("Error while fetching repos:", e)
+
+    return REPO_CACHE
 
 
 @app.route('/all_repos')
 def all_repos():
-    # Use the cached or freshly fetched repo list
+    """AJAX route to serve repos to TomSelect."""
     return jsonify(get_repositories())
 
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
+    """Main form logic: render PR data or show form."""
     error = None
     pr_data = []
     selected_repos = []
@@ -97,7 +110,7 @@ def index():
 
     return render_template(
         'index.html',
-        repo_list=get_repositories(),
+        repo_list=DEFAULT_REPOS,
         pr_data=pr_data,
         selected_repos=selected_repos,
         branch=branch,
@@ -106,6 +119,16 @@ def index():
     )
 
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5050, debug=True)
+# === Background refresher ===
+def start_background_repo_refresh():
+    def refresh():
+        get_repositories()
+        threading.Timer(600, refresh).start()  # refresh every 10 min
 
+    refresh()
+
+
+# === App Entry Point ===
+if __name__ == "__main__":
+    start_background_repo_refresh()
+    app.run(host="0.0.0.0", port=5050, debug=True)
