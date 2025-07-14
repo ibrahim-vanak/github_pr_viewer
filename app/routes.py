@@ -58,9 +58,16 @@ def all_repos():
 def index():
     error = None
     pr_data = []
-    branch = request.form.get('branch', 'main')
-    days = int(request.form.get('days', 7))
-    selected_repos = request.form.getlist('repo') if request.method == 'POST' else DEFAULT_REPOS
+    no_pr_repos = []
+
+    if request.method == 'POST':
+        selected_repos = request.form.getlist('repo')
+        branch = request.form.get('branch') or 'main'
+        days = int(request.form.get('days') or 7)
+    else:
+        selected_repos = DEFAULT_REPOS
+        branch = 'main'
+        days = 7
 
     since_dt = datetime.now(timezone.utc) - timedelta(days=days)
     headers = {'Authorization': f'token {GITHUB_TOKEN}'}
@@ -78,18 +85,24 @@ def index():
             error = f"Failed to fetch PRs from {repo}."
             continue
 
+        repo_prs = []
         for pr in resp.json():
             merged_at = pr.get("merged_at")
             if merged_at:
                 merged_at_dt = datetime.strptime(merged_at, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
                 if merged_at_dt > since_dt:
-                    pr_data.append({
+                    repo_prs.append({
                         "repo": repo,
                         "title": pr["title"],
                         "author": pr["user"]["login"],
                         "merged_at": merged_at_dt.strftime("%Y-%m-%d %H:%M"),
                         "url": pr["html_url"]
                     })
+
+        if repo_prs:
+            pr_data.extend(repo_prs)
+        else:
+            no_pr_repos.append(repo)
 
     if branch_not_found:
         error = f"The branch '{branch}' does not exist in: {', '.join(branch_not_found)}."
@@ -101,9 +114,9 @@ def index():
         selected_repos=selected_repos,
         branch=branch,
         days=days,
-        error=error
+        error=error,
+        no_pr_repos=no_pr_repos
     )
-
 
 
 if __name__ == "__main__":

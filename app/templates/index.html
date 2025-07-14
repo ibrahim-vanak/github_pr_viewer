@@ -143,6 +143,15 @@
     </table>
   {% endif %}
 
+  {% if no_pr_repos %}
+  <h3>No PRs were merged into <span class="highlight">{{ branch }}</span> for the following repo(s) in the last <span class="highlight">{{ days }}</span> day(s):</h3>
+  <ul>
+    {% for repo in no_pr_repos %}
+    <li><strong>{{ repo }}</strong></li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+
   <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
   <script>
     let repoSelect;
