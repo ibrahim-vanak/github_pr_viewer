@@ -58,43 +58,41 @@ def all_repos():
 def index():
     error = None
     pr_data = []
-    selected_repos = []
     branch = request.form.get('branch', 'main')
     days = int(request.form.get('days', 7))
+    selected_repos = request.form.getlist('repo') if request.method == 'POST' else DEFAULT_REPOS
 
-    if request.method == 'POST':
-        selected_repos = request.form.getlist('repo')
-        since_dt = datetime.now(timezone.utc) - timedelta(days=days)
-        headers = {'Authorization': f'token {GITHUB_TOKEN}'}
-        branch_not_found = []
+    since_dt = datetime.now(timezone.utc) - timedelta(days=days)
+    headers = {'Authorization': f'token {GITHUB_TOKEN}'}
+    branch_not_found = []
 
-        for repo in selected_repos:
-            url = f'https://api.github.com/repos/{ORG_NAME}/{repo}/pulls?state=closed&base={branch}&per_page=100'
-            resp = requests.get(url, headers=headers)
+    for repo in selected_repos:
+        url = f'https://api.github.com/repos/{ORG_NAME}/{repo}/pulls?state=closed&base={branch}&per_page=100'
+        resp = requests.get(url, headers=headers)
 
-            if resp.status_code == 404:
-                branch_not_found.append(repo)
-                continue
+        if resp.status_code == 404:
+            branch_not_found.append(repo)
+            continue
 
-            if resp.status_code != 200:
-                error = f"Failed to fetch PRs from {repo}."
-                continue
+        if resp.status_code != 200:
+            error = f"Failed to fetch PRs from {repo}."
+            continue
 
-            for pr in resp.json():
-                merged_at = pr.get("merged_at")
-                if merged_at:
-                    merged_at_dt = datetime.strptime(merged_at, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
-                    if merged_at_dt > since_dt:
-                        pr_data.append({
-                            "repo": repo,
-                            "title": pr["title"],
-                            "author": pr["user"]["login"],
-                            "merged_at": merged_at_dt.strftime("%Y-%m-%d %H:%M"),
-                            "url": pr["html_url"]
-                        })
+        for pr in resp.json():
+            merged_at = pr.get("merged_at")
+            if merged_at:
+                merged_at_dt = datetime.strptime(merged_at, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+                if merged_at_dt > since_dt:
+                    pr_data.append({
+                        "repo": repo,
+                        "title": pr["title"],
+                        "author": pr["user"]["login"],
+                        "merged_at": merged_at_dt.strftime("%Y-%m-%d %H:%M"),
+                        "url": pr["html_url"]
+                    })
 
-        if branch_not_found:
-            error = f"The branch '{branch}' does not exist in: {', '.join(branch_not_found)}."
+    if branch_not_found:
+        error = f"The branch '{branch}' does not exist in: {', '.join(branch_not_found)}."
 
     return render_template(
         'index.html',
@@ -105,6 +103,7 @@ def index():
         days=days,
         error=error
     )
+
 
 
 if __name__ == "__main__":
