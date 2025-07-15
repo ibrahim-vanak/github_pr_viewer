@@ -72,12 +72,20 @@ def index():
     headers = {'Authorization': f'token {GITHUB_TOKEN}'}
 
     for repo in selected_repos:
-        url = f'https://api.github.com/repos/{ORG_NAME}/{repo}/pulls?state=closed&base={branch}&per_page=100'
-        resp = requests.get(url, headers=headers)
+        # 1. Check if the branch exists
+        branch_check_url = f'https://api.github.com/repos/{ORG_NAME}/{repo}/branches/{branch}'
+        branch_resp = requests.get(branch_check_url, headers=headers)
 
-        if resp.status_code == 404:
+        if branch_resp.status_code == 404:
             repo_statuses[repo] = f"⚠️ Branch '{branch}' not found in {repo}"
             continue
+        elif branch_resp.status_code != 200:
+            repo_statuses[repo] = f"❌ Failed to validate branch '{branch}' in {repo}"
+            continue
+
+        # 2. Fetch closed PRs targeting the base branch
+        url = f'https://api.github.com/repos/{ORG_NAME}/{repo}/pulls?state=closed&base={branch}&per_page=100'
+        resp = requests.get(url, headers=headers)
 
         if resp.status_code != 200:
             repo_statuses[repo] = f"❌ Failed to fetch PRs from {repo}"
@@ -101,6 +109,7 @@ def index():
             pr_data.extend(merged_prs)
         else:
             repo_statuses[repo] = f"ℹ️ No PRs merged into '{branch}' in the last {days} days."
+
 
     return render_template(
         'index.html',
