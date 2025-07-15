@@ -97,7 +97,7 @@
   <h2>🔍 View Merged GitHub PRs</h2>
 
   <form method="post" action="{{ url_for('index') }}">
-    <label for="repo">GitHub Repository:</label>
+    <label for="repo">GitHub Repository (type or select):</label>
     <select name="repo" id="repo" required></select>
 
     <label for="branch">Branch Name (default: main):</label>
@@ -184,10 +184,10 @@
       // 1. Initialize dropdown immediately with default repos
       repoSelect = new TomSelect('#repo', {
         maxItems: 1,
-        create: false,
+        create: true,
         options: defaultRepos.map(repo => ({ value: repo, text: repo })),
         plugins: ['remove_button'],
-        placeholder: 'Search and select a repository...',
+        placeholder: 'Search, type or select a repository...',
         valueField: 'value',
         labelField: 'text',
         searchField: 'text'
