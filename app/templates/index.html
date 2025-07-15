@@ -156,12 +156,14 @@
 
 
   {% if no_pr_repos %}
-  <h3>No PRs were merged into <span class="highlight">{{ branch }}</span> for the following repo(s) in the last <span class="highlight">{{ days }}</span> day(s):</h3>
-  <ul>
-    {% for repo in no_pr_repos %}
-    <li><strong>{{ repo }}</strong></li>
-    {% endfor %}
-  </ul>
+  <div id="no-pr-section">
+    <h3>No PRs were merged into <span class="highlight">{{ branch }}</span> for the following repo(s) in the last <span class="highlight">{{ days }}</span> day(s):</h3>
+    <ul>
+      {% for repo in no_pr_repos %}
+      <li><strong>{{ repo }}</strong></li>
+      {% endfor %}
+    </ul>
+  </div>
   {% endif %}
 
   <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
@@ -217,12 +219,14 @@
         const resultTable = document.querySelector('table');
         const summaryHeading = document.querySelector('h3');
         const errorMessage = document.querySelector('.error');
-        const repoStatusDiv = document.getElementById('repo-status');  // ← new
+        const repoStatusDiv = document.getElementById('repo-status');
+        const noPrSection = document.getElementById('no-pr-section');
 
         if (resultTable) resultTable.remove();
         if (summaryHeading) summaryHeading.remove();
         if (errorMessage) errorMessage.remove();
-        if (repoStatusDiv) repoStatusDiv.remove();  // ← remove repo status
+        if (repoStatusDiv) repoStatusDiv.remove();
+        if (noPrSection) noPrSection.remove(); // ← NEW
       });
     });
   </script>
