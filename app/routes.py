@@ -1,11 +1,12 @@
-import os 
-from flask import Flask, render_template, request, jsonify
+import os
+from flask import Flask, render_template, request, jsonify, redirect, url_for, session
 import requests
 from datetime import datetime, timedelta, timezone
 
 app = Flask(__name__)
+app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'dummy_secret')  # Required for session support
 
-GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN') 
+GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN')
 ORG_NAME = 'OptivaInc'
 
 DEFAULT_REPOS = [
@@ -50,7 +51,6 @@ def get_repositories():
 
 @app.route('/all_repos')
 def all_repos():
-    # Use the cached or freshly fetched repo list
     return jsonify(get_repositories())
 
 
@@ -58,15 +58,19 @@ def all_repos():
 def index():
     error = None
     pr_data = []
-    repo_statuses = {}  # NEW: track status per repo
-    selected_repos = []
-    branch = request.form.get('branch', 'main')
-    days = int(request.form.get('days', 7))
+    repo_statuses = {}
 
     if request.method == 'POST':
-        selected_repos = request.form.getlist('repo')
-    else:
-        selected_repos = DEFAULT_REPOS  # show default repos on first load
+        # Store input in session
+        session['selected_repos'] = request.form.getlist('repo')
+        session['branch'] = request.form.get('branch', 'main')
+        session['days'] = request.form.get('days', '7')
+        return redirect(url_for('index'))
+
+    # Load from session (or fallbacks)
+    selected_repos = session.pop('selected_repos', DEFAULT_REPOS)
+    branch = session.pop('branch', 'main')
+    days = int(session.pop('days', 7))
 
     since_dt = datetime.now(timezone.utc) - timedelta(days=days)
     headers = {'Authorization': f'token {GITHUB_TOKEN}'}
@@ -83,10 +87,9 @@ def index():
             repo_statuses[repo] = f"❌ Failed to validate branch '{branch}' in {repo}"
             continue
 
-        # 2. Fetch closed PRs targeting the base branch
+        # 2. Fetch merged PRs
         url = f'https://api.github.com/repos/{ORG_NAME}/{repo}/pulls?state=closed&base={branch}&per_page=100'
         resp = requests.get(url, headers=headers)
-
         if resp.status_code != 200:
             repo_statuses[repo] = f"❌ Failed to fetch PRs from {repo}"
             continue
@@ -110,18 +113,16 @@ def index():
         else:
             repo_statuses[repo] = f"ℹ️ No PRs merged into '{branch}' in the last {days} days."
 
-
     return render_template(
         'index.html',
         repo_list=DEFAULT_REPOS,
         pr_data=pr_data,
-        repo_statuses=repo_statuses,  # pass repo-specific statuses
+        repo_statuses=repo_statuses,
         selected_repos=selected_repos,
         branch=branch,
         days=days,
         error=error
     )
-
 
 
 if __name__ == "__main__":
