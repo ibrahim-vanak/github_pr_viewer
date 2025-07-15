@@ -181,7 +181,7 @@
       const loadingText = document.getElementById('loadingText');
       loadingText.style.display = 'block';
 
-      // 1. Initialize TomSelect with default repos instantly
+      // 1. Initialize dropdown immediately with default repos
       repoSelect = new TomSelect('#repo', {
         maxItems: 1,
         create: false,
@@ -193,26 +193,22 @@
         searchField: 'text'
       });
 
-      // 2. Background fetch to replace options
+      // 2. Background fetch of complete repo list
       fetch('/all_repos')
         .then(res => res.json())
         .then(repoOptions => {
           loadingText.style.display = 'none';
-          const currentValue = repoSelect.getValue();  // Preserve selection
-
+          const currentValue = repoSelect.getValue();
           repoSelect.clearOptions();
           repoOptions.forEach(repo => repoSelect.addOption(repo));
           repoSelect.refreshOptions(false);
-
-          if (currentValue) {
-            repoSelect.setValue(currentValue); // Restore selection
-          }
+          if (currentValue) repoSelect.setValue(currentValue);
         })
         .catch(err => {
           loadingText.textContent = '⚠️ Failed to load repository list.';
         });
 
-      // 3. Clear Button Logic
+      // 3. Clear button logic
       document.getElementById('clearBtn').addEventListener('click', () => {
         if (repoSelect) repoSelect.clear();
         document.getElementById('branch').value = '';
