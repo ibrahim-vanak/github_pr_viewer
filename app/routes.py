@@ -58,40 +58,38 @@ def all_repos():
 def index():
     error = None
     pr_data = []
-    no_pr_repos = []
+    repo_statuses = {}  # NEW: track status per repo
+    selected_repos = []
+    branch = request.form.get('branch', 'main')
+    days = int(request.form.get('days', 7))
 
     if request.method == 'POST':
         selected_repos = request.form.getlist('repo')
-        branch = request.form.get('branch') or 'main'
-        days = int(request.form.get('days') or 7)
     else:
-        selected_repos = DEFAULT_REPOS
-        branch = 'main'
-        days = 7
+        selected_repos = DEFAULT_REPOS  # show default repos on first load
 
     since_dt = datetime.now(timezone.utc) - timedelta(days=days)
     headers = {'Authorization': f'token {GITHUB_TOKEN}'}
-    branch_not_found = []
 
     for repo in selected_repos:
         url = f'https://api.github.com/repos/{ORG_NAME}/{repo}/pulls?state=closed&base={branch}&per_page=100'
         resp = requests.get(url, headers=headers)
 
         if resp.status_code == 404:
-            branch_not_found.append(repo)
+            repo_statuses[repo] = f"⚠️ Branch '{branch}' not found in {repo}"
             continue
 
         if resp.status_code != 200:
-            error = f"Failed to fetch PRs from {repo}."
+            repo_statuses[repo] = f"❌ Failed to fetch PRs from {repo}"
             continue
 
-        repo_prs = []
+        merged_prs = []
         for pr in resp.json():
             merged_at = pr.get("merged_at")
             if merged_at:
                 merged_at_dt = datetime.strptime(merged_at, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
                 if merged_at_dt > since_dt:
-                    repo_prs.append({
+                    merged_prs.append({
                         "repo": repo,
                         "title": pr["title"],
                         "author": pr["user"]["login"],
@@ -99,24 +97,22 @@ def index():
                         "url": pr["html_url"]
                     })
 
-        if repo_prs:
-            pr_data.extend(repo_prs)
+        if merged_prs:
+            pr_data.extend(merged_prs)
         else:
-            no_pr_repos.append(repo)
-
-    if branch_not_found:
-        error = f"The branch '{branch}' does not exist in: {', '.join(branch_not_found)}."
+            repo_statuses[repo] = f"ℹ️ No PRs merged into '{branch}' in the last {days} days."
 
     return render_template(
         'index.html',
         repo_list=get_repositories(),
         pr_data=pr_data,
+        repo_statuses=repo_statuses,  # pass repo-specific statuses
         selected_repos=selected_repos,
         branch=branch,
         days=days,
-        error=error,
-        no_pr_repos=no_pr_repos
+        error=error
     )
+
 
 
 if __name__ == "__main__":
