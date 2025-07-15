@@ -195,20 +195,33 @@
         searchField: 'text'
       });
 
-      // 2. Background fetch of complete repo list
-      fetch('/all_repos')
-        .then(res => res.json())
-        .then(repoOptions => {
-          loadingText.style.display = 'none';
-          const currentValue = repoSelect.getValue();
-          repoSelect.clearOptions();
-          repoOptions.forEach(repo => repoSelect.addOption(repo));
-          repoSelect.refreshOptions(false);
-          if (currentValue) repoSelect.setValue(currentValue);
-        })
-        .catch(err => {
-          loadingText.textContent = '⚠️ Failed to load repository list.';
-        });
+      // 2. Try sessionStorage first
+      const cachedRepos = sessionStorage.getItem('cachedRepos');
+      if (cachedRepos) {
+        loadingText.style.display = 'none';
+        const repoOptions = JSON.parse(cachedRepos);
+        const currentValue = repoSelect.getValue();
+        repoSelect.clearOptions();
+        repoOptions.forEach(repo => repoSelect.addOption(repo));
+        repoSelect.refreshOptions(false);
+        if (currentValue) repoSelect.setValue(currentValue);
+      } else {
+        // Fetch from server
+        fetch('/all_repos')
+          .then(res => res.json())
+          .then(repoOptions => {
+            sessionStorage.setItem('cachedRepos', JSON.stringify(repoOptions));
+            loadingText.style.display = 'none';
+            const currentValue = repoSelect.getValue();
+            repoSelect.clearOptions();
+            repoOptions.forEach(repo => repoSelect.addOption(repo));
+            repoSelect.refreshOptions(false);
+            if (currentValue) repoSelect.setValue(currentValue);
+          })
+          .catch(err => {
+            loadingText.textContent = '⚠️ Failed to load repository list.';
+          });
+      }
 
       // 3. Clear button logic
       document.getElementById('clearBtn').addEventListener('click', () => {
@@ -226,10 +239,11 @@
         if (summaryHeading) summaryHeading.remove();
         if (errorMessage) errorMessage.remove();
         if (repoStatusDiv) repoStatusDiv.remove();
-        if (noPrSection) noPrSection.remove(); // ← NEW
+        if (noPrSection) noPrSection.remove();
       });
     });
   </script>
+
 
 </body>
 </html>
