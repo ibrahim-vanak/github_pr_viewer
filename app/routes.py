@@ -61,13 +61,18 @@ def index():
     repo_statuses = {}
 
     if request.method == 'POST':
-        # Store input in session
-        session['selected_repos'] = request.form.getlist('repo')
+        selected = request.form.getlist('repo')
+        # Special handling for "Default Repos" token
+        if '__default__' in selected:
+            session['selected_repos'] = DEFAULT_REPOS
+        else:
+            session['selected_repos'] = selected
+
         session['branch'] = request.form.get('branch', 'main')
         session['days'] = request.form.get('days', '7')
         return redirect(url_for('index'))
 
-    # Load from session (or fallbacks)
+    # Load from session or fallback
     selected_repos = session.pop('selected_repos', DEFAULT_REPOS)
     branch = session.pop('branch', 'main')
     days = int(session.pop('days', 7))

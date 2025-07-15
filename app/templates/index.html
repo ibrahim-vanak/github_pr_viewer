@@ -171,12 +171,13 @@
     let repoSelect;
 
     const defaultRepos = [
-      "OBP-Product-App-CM-Portal-Backend",
-      "OBP-Product-App-Suite",
-      "Optiva-Product-App-Api-Gw",
-      "OBP-Product-App-CM-Portal-UI",
-      "OBP-Product-CM-Portal-RAF",
-      "OBP-Product-App-CM-Portal-Uploader"
+      { value: "__default__", text: "🔹 Default Repos (6)" },
+      { value: "OBP-Product-App-CM-Portal-Backend", text: "OBP-Product-App-CM-Portal-Backend" },
+      { value: "OBP-Product-App-Suite", text: "OBP-Product-App-Suite" },
+      { value: "Optiva-Product-App-Api-Gw", text: "Optiva-Product-App-Api-Gw" },
+      { value: "OBP-Product-App-CM-Portal-UI", text: "OBP-Product-App-CM-Portal-UI" },
+      { value: "OBP-Product-CM-Portal-RAF", text: "OBP-Product-CM-Portal-RAF" },
+      { value: "OBP-Product-App-CM-Portal-Uploader", text: "OBP-Product-App-CM-Portal-Uploader" }
     ];
 
     window.addEventListener('DOMContentLoaded', () => {
@@ -187,7 +188,7 @@
       repoSelect = new TomSelect('#repo', {
         maxItems: 1,
         create: true,
-        options: defaultRepos.map(repo => ({ value: repo, text: repo })),
+        options: defaultRepos,
         plugins: ['remove_button'],
         placeholder: 'Search, type or select a repository...',
         valueField: 'value',
