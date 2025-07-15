@@ -113,7 +113,7 @@ def index():
 
     return render_template(
         'index.html',
-        repo_list=get_repositories(),
+        repo_list=DEFAULT_REPOS,
         pr_data=pr_data,
         repo_statuses=repo_statuses,  # pass repo-specific statuses
         selected_repos=selected_repos,
