@@ -119,32 +119,38 @@
   {% endif %}
 
   {% if pr_data %}
-    <h3>
-      Following are the PRs merged into
-      <span class="highlight">{{ branch }}</span> branch of
-      <span class="highlight">{{ selected_repos|join(', ') }}</span> in the last
-      <span class="highlight">{{ days }}</span> day(s):
-    </h3>
+  <h3>
+    Following are the PRs merged into
+    <span class="highlight">{{ branch }}</span> branch in the last
+    <span class="highlight">{{ days }}</span> day(s):
+  </h3>
 
-    <table>
-      <tr>
-        <th>Repository</th>
-        <th>Title</th>
-        <th>Author</th>
-        <th>Merged At</th>
-        <th>Link</th>
-      </tr>
-      {% for pr in pr_data %}
-      <tr>
-        <td>{{ pr.repo }}</td>
-        <td class="title-col">{{ pr.title }}</td>
-        <td>{{ pr.author }}</td>
-        <td>{{ pr.merged_at }}</td>
-        <td><a href="{{ pr.url }}" target="_blank">View PR</a></td>
-      </tr>
-      {% endfor %}
-    </table>
+  {% set grouped = {} %}
+  {% for pr in pr_data %}
+  {% set _ = grouped.setdefault(pr.repo, []).append(pr) %}
+  {% endfor %}
+
+  {% for repo_name, prs in grouped.items() %}
+  <h3>{{ repo_name }}</h3>
+  <table>
+    <tr>
+      <th>Title</th>
+      <th>Author</th>
+      <th>Merged At</th>
+      <th>Link</th>
+    </tr>
+    {% for pr in prs %}
+    <tr>
+      <td class="title-col">{{ pr.title }}</td>
+      <td>{{ pr.author }}</td>
+      <td>{{ pr.merged_at }}</td>
+      <td><a href="{{ pr.url }}" target="_blank">View PR</a></td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% endfor %}
   {% endif %}
+
 
   {% if repo_statuses %}
   <div id="repo-status">
