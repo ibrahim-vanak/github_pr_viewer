@@ -99,7 +99,9 @@
   <form method="post" action="{{ url_for('index') }}">
     <label for="repo">GitHub Repository (type or select):</label>
     <select name="repo" id="repo" required></select>
-    <small style="color: #6c757d;">Select "Default Repos" to check PRs in all 6 commonly used repos.</small>
+    <small style="display:block; margin-top:-10px; margin-bottom:15px; color:#6c757d;">
+      Select <strong>“Default Repos (6)”</strong> to query all 6 commonly used repositories at once.
+    </small>
 
     <label for="branch">Branch Name (default: main):</label>
     <input type="text" name="branch" id="branch" placeholder="main" value="{{ branch or 'main' }}">
