@@ -99,6 +99,7 @@
   <form method="post" action="{{ url_for('index') }}">
     <label for="repo">GitHub Repository (type or select):</label>
     <select name="repo" id="repo" required></select>
+    <small style="color: #6c757d;">Select "Default Repos" to check PRs in all 6 commonly used repos.</small>
 
     <label for="branch">Branch Name (default: main):</label>
     <input type="text" name="branch" id="branch" placeholder="main" value="{{ branch or 'main' }}">
@@ -203,6 +204,7 @@
         const repoOptions = JSON.parse(cachedRepos);
         const currentValue = repoSelect.getValue();
         repoSelect.clearOptions();
+        repoSelect.addOption({ value: "__default__", text: "🔹 Default Repos (6)" });
         repoOptions.forEach(repo => repoSelect.addOption(repo));
         repoSelect.refreshOptions(false);
         if (currentValue) repoSelect.setValue(currentValue);
@@ -215,6 +217,7 @@
             loadingText.style.display = 'none';
             const currentValue = repoSelect.getValue();
             repoSelect.clearOptions();
+            repoSelect.addOption({ value: "__default__", text: "🔹 Default Repos (6)" });
             repoOptions.forEach(repo => repoSelect.addOption(repo));
             repoSelect.refreshOptions(false);
             if (currentValue) repoSelect.setValue(currentValue);
