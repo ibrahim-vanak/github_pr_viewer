@@ -51,17 +51,42 @@
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     }
 
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      table-layout: fixed; /* 👈 Important */
+      margin-top: 2em;
+      background: #fff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
     th, td {
       padding: 12px 15px;
       border: 1px solid #dee2e6;
       text-align: left;
+      word-wrap: break-word;
     }
 
-    td.title-col {
-      max-width: 250px;
-      word-wrap: break-word;
-      white-space: normal;
-      line-height: 1.4;
+    th:nth-child(1),
+    td:nth-child(1) {
+      width: 35%; /* Title column */
+    }
+
+    th:nth-child(2),
+    td:nth-child(2) {
+      width: 20%; /* Author */
+    }
+
+    th:nth-child(3),
+    td:nth-child(3) {
+      width: 20%; /* Merged At */
+    }
+
+    th:nth-child(4),
+    td:nth-child(4) {
+      width: 25%; /* Link */
     }
 
     th {
