@@ -115,8 +115,10 @@ def index():
 
         if merged_prs:
             pr_data.extend(merged_prs)
-        elif repo not in repo_statuses:
-            repo_statuses[repo] = f"ℹ️ No PRs merged into '{branch}' in the last {days} days."
+        else:
+            if repo not in repo_statuses:
+                repo_statuses[repo] = f"ℹ️ No PRs merged into '{branch}' in the last {days} days."
+
 
     return render_template(
         'index.html',
