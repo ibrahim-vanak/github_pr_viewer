@@ -81,22 +81,22 @@ def index():
     headers = {'Authorization': f'token {GITHUB_TOKEN}'}
 
     for repo in selected_repos:
-        # 1. Check if the branch exists
-        branch_check_url = f'https://api.github.com/repos/{ORG_NAME}/{repo}/branches/{branch}'
+        branch_trimmed = branch.strip()
+        branch_check_url = f'https://api.github.com/repos/{ORG_NAME}/{repo}/branches/{branch_trimmed}'
         branch_resp = requests.get(branch_check_url, headers=headers)
 
         if branch_resp.status_code == 404:
-            repo_statuses[repo] = f"⚠️ Branch '{branch}' not found in {repo}"
+            repo_statuses[repo] = f"⚠️ Branch '{branch_trimmed}' not found in {repo}"
             continue
         elif branch_resp.status_code != 200:
-            repo_statuses[repo] = f"❌ Failed to validate branch '{branch}' in {repo}"
+            repo_statuses[repo] = f"❌ Error checking branch '{branch_trimmed}' in {repo} (HTTP {branch_resp.status_code})"
             continue
 
-        # 2. Fetch merged PRs
-        url = f'https://api.github.com/repos/{ORG_NAME}/{repo}/pulls?state=closed&base={branch}&per_page=100'
+        # Proceed only if branch exists
+        url = f'https://api.github.com/repos/{ORG_NAME}/{repo}/pulls?state=closed&base={branch_trimmed}&per_page=100'
         resp = requests.get(url, headers=headers)
         if resp.status_code != 200:
-            repo_statuses[repo] = f"❌ Failed to fetch PRs from {repo}"
+            repo_statuses[repo] = f"❌ Failed to fetch PRs from {repo} (HTTP {resp.status_code})"
             continue
 
         merged_prs = []
@@ -116,9 +116,9 @@ def index():
         if merged_prs:
             pr_data.extend(merged_prs)
         else:
+            # Explicitly check if status was already set before
             if repo not in repo_statuses:
-                repo_statuses[repo] = f"ℹ️ No PRs merged into '{branch}' in the last {days} days."
-
+                repo_statuses[repo] = f"ℹ️ No PRs merged into '{branch_trimmed}' in the last {days} days."
 
     return render_template(
         'index.html',
