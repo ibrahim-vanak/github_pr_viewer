@@ -1,14 +1,17 @@
 #!/usr/bin/python
 
+import os
 import requests
 import smtplib
 import argparse
 from datetime import datetime, timedelta
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from dotenv import load_dotenv
 
-# GitHub token (required for private repos or high request limits)
-GITHUB_TOKEN = "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"
+load_dotenv(dotenv_path='/opt/github-pr-viewer/.env')
+
+GITHUB_TOKEN = os.getenv('GITHUB_TOKEN')
 HEADERS = {
     "Accept": "application/vnd.github+json",
     "Authorization": f"Bearer {GITHUB_TOKEN}" if GITHUB_TOKEN else ""
@@ -137,7 +140,7 @@ if __name__ == "__main__":
         subject=f"GitHub PR Merge Report to '{branch}' branch for Last {days_back} day(s)",
         html_content=html_content,
         from_email="ibrahim.vanak@optiva.com",
-        to_email=["ibrahim.vanak@optiva.com", "ibrahim.vanak@gmail.com"],
+        to_email=["ibrahim.vanak@optiva.com", "obp-leads@optiva.com", "bronagh.dowey@optiva.com" "richard.mclaughlin@optiva.com", "malcolm.tye@optiva.com"],
         smtp_server="172.16.20.11",
         smtp_port=25
     )
