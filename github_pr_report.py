@@ -68,7 +68,7 @@ def fetch_merged_prs(repo, branch='main', days_back=7):
                     results.append({
                         "repo": repo,
                         "url": pr["html_url"],
-                        "author": get_real_name(pr['user']['login']),
+                        "author": get_real_name(pr['user']['login'], headers),
                         "title": pr["title"],
                         "merged_at": merged_at.strftime("%Y-%m-%d %H:%M UTC")
                     })
