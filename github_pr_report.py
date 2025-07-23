@@ -28,6 +28,24 @@ REPOSITORIES = [
 
 ]
 
+user_name_cache = {}
+
+def get_real_name(username):
+    if username in user_name_cache:
+        return user_name_cache[username]
+
+    user_url = f"https://api.github.com/users/{username}"
+    response = requests.get(user_url, headers=headers)
+
+    if response.status_code == 200:
+        data = response.json()
+        name = data.get("name") or username  # Fallback to login
+        user_name_cache[username] = name
+        return name
+    else:
+        return username
+
+
 # Fetch merged PRs for a given repo and time window
 def fetch_merged_prs(repo, branch='main', days_back=7):
     since_time = datetime.utcnow() - timedelta(days=int(days_back))
@@ -50,7 +68,7 @@ def fetch_merged_prs(repo, branch='main', days_back=7):
                     results.append({
                         "repo": repo,
                         "url": pr["html_url"],
-                        "author": pr["user"]["login"],
+                        "author": get_real_name(pr['user']['login']),
                         "title": pr["title"],
                         "merged_at": merged_at.strftime("%Y-%m-%d %H:%M UTC")
                     })
