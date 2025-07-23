@@ -30,7 +30,7 @@ REPOSITORIES = [
 
 user_name_cache = {}
 
-def get_real_name(username):
+def get_real_name(username, headers):
     if username in user_name_cache:
         return user_name_cache[username]
 
@@ -39,7 +39,7 @@ def get_real_name(username):
 
     if response.status_code == 200:
         data = response.json()
-        name = data.get("name") or username  # Fallback to login
+        name = data.get("name") or username
         user_name_cache[username] = name
         return name
     else:
