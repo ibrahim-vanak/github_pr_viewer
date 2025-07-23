@@ -48,6 +48,10 @@ def get_real_name(username, headers):
 
 # Fetch merged PRs for a given repo and time window
 def fetch_merged_prs(repo, branch='main', days_back=7):
+    headers = {
+        "Authorization": f"token {GITHUB_TOKEN}",
+        "Accept": "application/vnd.github+json"
+    }
     since_time = datetime.utcnow() - timedelta(days=int(days_back))
     url = f"https://api.github.com/repos/{repo}/pulls"
     params = {"state": "closed", "base": branch, "per_page": 100}
