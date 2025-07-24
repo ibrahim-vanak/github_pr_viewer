@@ -162,7 +162,7 @@ if __name__ == "__main__":
         subject=f"GitHub PR Merge Report to '{branch}' branch for Last {days_back} day(s)",
         html_content=html_content,
         from_email="ibrahim.vanak@optiva.com",
-        to_email=["ibrahim.vanak@optiva.com", "obp-leads@optiva.com", "bronagh.dowey@optiva.com" "richard.mclaughlin@optiva.com", "malcolm.tye@optiva.com"],
+        to_email=["ibrahim.vanak@optiva.com", "obp-leads@optiva.com", "bronagh.dowey@optiva.com", "richard.mclaughlin@optiva.com", "malcolm.tye@optiva.com"],
         smtp_server="172.16.20.11",
         smtp_port=25
     )
